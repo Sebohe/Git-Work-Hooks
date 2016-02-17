@@ -1,128 +1,117 @@
 #!/bin/sh
 
 STRING=$(git status -s)
+echo "STRING"
 echo $STRING
+
 for x in $STRING; do
 	stagedFileName="not initiated"
 	echo $x
-	#ACD
-	if [ ($(echo $x | grep .ACD)) && !(-z "$ACD") ]; then
+	
+	if [[ !( -z $(echo $x | grep .ACD) ) && ( -z $ACD ) ]]; then
 	   echo "found 1"
 	   ACD=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
 							grep .ACD |
-							awk '{print $4}')
-							
-							
-							
+							awk '{print $4}')		
 	   conditionOnStagedFile=$(git status -s | grep .ACD | awk '{print $1}')
-	   
 		if [ $conditionOnStagedFile == "M" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .ACD | awk '{print $2}')
 		elif [ $conditionOnStagedFile == "R" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .ACD | awk '{print $4}')
 		fi
 	fi
-	#MER
-	if [ ($(echo $x | grep .mer)) && !(-z "$MER") ]; then
-       echo "found 2"
-       MER=$x
+	
+	if [[ !( -z $(echo $x | grep .mer) ) && ( -z $MER ) ]]; then
+	   echo "found 2"
+	   MER=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
 							grep .mer |
-							awk '{print $4}')
-							
-							
-							
+							awk '{print $4}')		
 	   conditionOnStagedFile=$(git status -s | grep .mer | awk '{print $1}')
-	   
 		if [ $conditionOnStagedFile == "M" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .mer | awk '{print $2}')
 		elif [ $conditionOnStagedFile == "R" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .mer | awk '{print $4}')
 		fi
-       
 	fi
-	#APA
-	if [ ($(echo $x | grep .apa)) && !(-z "$APA") ]; then
-       echo "found 3"
-       APA=$x
+	
+	if [[ !( -z $(echo $x | grep .apa) ) && ( -z $APA ) ]]; then
+	   echo "found 3"
+	   APA=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
 							grep .apa |
-							awk '{print $4}')
-							
-							
-							
+							awk '{print $4}')		
 	   conditionOnStagedFile=$(git status -s | grep .apa | awk '{print $1}')
-	   
 		if [ $conditionOnStagedFile == "M" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .apa | awk '{print $2}')
 		elif [ $conditionOnStagedFile == "R" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .apa | awk '{print $4}')
 		fi
-       
 	fi
-	#FSP
-	if [ ($(echo $x | grep .fsp)) && !(-z "$FSP") ]; then
-       echo "found 4"
-       FSP=$x
+	
+	if [[ !( -z $(echo $x | grep .fsp) ) && ( -z $FSP ) ]]; then
+	   echo "found 4"
+	   FSP=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
 							grep .fsp |
-							awk '{print $4}')
-							
-							
-							
+							awk '{print $4}')		
 	   conditionOnStagedFile=$(git status -s | grep .fsp | awk '{print $1}')
-	   
 		if [ $conditionOnStagedFile == "M" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .fsp | awk '{print $2}')
 		elif [ $conditionOnStagedFile == "R" ]
-			then
+		then
 				stagedFileName=$(git status -s | grep .fsp | awk '{print $4}')
 		fi
-       
 	fi
-   
-   
-   
+	
+	###############################################################
+	
+	
+	#xx.yy.zz.ACD
+	# xx = major number
+	# yy = revision number
+	# zz = commit number
 	if [ $(echo $stagedFileName | wc -w) == 1 ]
 	then
 		#sed 's/.*v//')
-		lastACDVersion=$(echo $lastCommitFileName | 
+		
+		lastMajorNumber=$(echo $lastCommitFileName | 
 					awk  'BEGIN {FS=".";} {print $1;}')		
-		lastHMIVersion=$(echo $lastCommitFileName | 
+		lastRevisionNumber=$(echo $lastCommitFileName | 
 						awk  'BEGIN {FS=".";} {print $2;}')
-		newACDVersion=$(echo $stagedFileName | 
+						
+		newMajorNumber=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=".";} {print $1;}')
-		newHMIVersion=$(echo $stagedFileName | 
+		newRevisionNumber=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=".";} {print $2;}')
-						
-						
-						
-		currentREV=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
-		newRev=$(echo $currentREV | xargs -I {} expr {} + 1)
-	#https://stackoverflow.com/questions/34872375/awk-command-in-bash-script-replaced-my-file-field-separator-from-to
+		
+		currentCommitNumber=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
+		newCommitNumber=$(echo $currentCommitNumber | xargs -I {} expr {} + 1)
+	
+		#
 		newFileName=$(echo $stagedFileName | 
-						awk  'BEGIN {FS=OFS=".";} {$3='$newRev';} {print;}')	
-		if [ $lastACDVersion != $newACDVersion ]
+						awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')	
+		if [ $lastMajorNumber != $newMajorNumber ]
 		then
 			#echo "first if"
 			#THIS SETS TO zero THE REV COUNT
-			echo $newACDVersion
+			echo $newMajorNumber
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
 						#Why wasn't this working: {$1='$newACDVersion'; $3=0;}
-		elif [ $lastHMIVersion != $newHMIVersion ]
+		elif [ $lastRevisionNumber != $newRevisionNumber ]
 		then
 			#echo "second if"
 			newFileName=$(echo $stagedFileName | 
@@ -132,12 +121,13 @@ for x in $STRING; do
 		#echo $newFileName
 		git mv $stagedFileName $newFileName
 		echo "Hook executed."
-		
 	else
-		echo "Hook script not executed. Aborting commit"
-		exit 1
-	fi   
+		echo "wc not 1"
+	fi 
+
+
 done 
+
 
 
 

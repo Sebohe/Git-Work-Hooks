@@ -24,6 +24,7 @@ for x in $gitStatusShort; do
 		elif [ $conditionOnStagedFile == "R" ]
 		then
 				stagedFileName=$(git status -s | grep .ACD | awk '{print $4}')
+		elif [ $conditionOnStagedFile == "A" ]
 		fi
 	fi
 	#MER

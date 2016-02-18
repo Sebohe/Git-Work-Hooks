@@ -92,7 +92,8 @@ for x in $gitStatusShort; do
 	then
 		#sed 's/.*v//')
 		#doesn't run this section of the code if the file has been renamed
-		if [ $ conditionOnStagedFile == "R" ]; then
+		if [ $conditionOnStagedFile == "R" ] 
+		then
 			lastMajorNumber=$(echo $lastCommitFileName | 
 						awk  'BEGIN {FS=".";} {print $1;}')		
 			lastRevisionNumber=$(echo $lastCommitFileName | 
@@ -106,31 +107,38 @@ for x in $gitStatusShort; do
 		
 		currentCommitNumber=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
 		newCommitNumber=$(echo $currentCommitNumber | xargs -I {} expr {} + 1)
-	
-		
 		newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')	
-		if [ $lastMajorNumber != $newMajorNumber ]
+
+		if [[ $lastMajorNumber != $newMajorNumber ]]
 		then
-			#echo "first if"
-			#THIS SETS TO zero THE REV COUNT
-			echo $newMajorNumber
+
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
-						
-		elif [ $lastRevisionNumber != $newRevisionNumber ]
+			newFileName=$(echo $stagedFileName | 
+						awk  'BEGIN {FS=OFS=".";} {$2=0;} {print;}')
+			revisionChanged=0
+
+		elif [ ( $lastRevisionNumber != $newRevisionNumber ) && ( $revisionChanged -ne 0 )]
 		then
-			#echo "second if"
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
 		fi
 		#echo "newFileName"
 		#echo $newFileName
+		
+		if [ $? -ne 0 ]; then
+			exit 1
+		fi
+
 		git mv $stagedFileName $newFileName
+		if [ $? -ne 0 ]; then
+			exit 1
+		fi
 		echo "Hook executed."
-	else
-		#echo "wc not 1"
-	fi 
+	fi
+	
+	
 
 done 
 

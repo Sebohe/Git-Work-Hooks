@@ -106,6 +106,7 @@ for x in $gitStatusShort; do
 		#doesn't run this section of the code if the file has been renamed
 		if [ $conditionOnStagedFile == "R" ] 
 		then
+			echo "CONDITION IS R"
 			lastMajorNumber=$(echo $lastCommitFileName | 
 						awk  'BEGIN {FS=".";} {print $1;}')		
 			lastRevisionNumber=$(echo $lastCommitFileName | 
@@ -127,11 +128,11 @@ for x in $gitStatusShort; do
 
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
-			newFileName=$(echo $stagedFileName | 
+			newFileName=$(echo $newFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$2=0;} {print;}')
 
 
-		elif [[ ( $lastRevisionNumber != $newRevisionNumber ) && ( $lastMajorNumber != $newMajorNumber ) ]]
+		elif [[ ( $lastRevisionNumber != $newRevisionNumber ) && ( $lastMajorNumber == $newMajorNumber ) ]]
 		then
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')

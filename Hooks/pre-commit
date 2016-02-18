@@ -1,15 +1,17 @@
 #!/bin/sh
 
-STRING=$(git status -s)
-echo "STRING"
-echo $STRING
+gitStatusShort=$(git status -s)
+#echo "STRING"
+#echo $gitStatusShort
 
-for x in $STRING; do
+
+#cycle through all the words in of STRING
+for x in $gitStatusShort; do
 	stagedFileName="not initiated"
-	echo $x
-	
+	#echo $x
+	#ACD
 	if [[ !( -z $(echo $x | grep .ACD) ) && ( -z $ACD ) ]]; then
-	   echo "found 1"
+	   #echo "found 1"
 	   ACD=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
@@ -24,9 +26,9 @@ for x in $STRING; do
 				stagedFileName=$(git status -s | grep .ACD | awk '{print $4}')
 		fi
 	fi
-	
+	#MER
 	if [[ !( -z $(echo $x | grep .mer) ) && ( -z $MER ) ]]; then
-	   echo "found 2"
+	   #echo "found 2"
 	   MER=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
@@ -41,9 +43,9 @@ for x in $STRING; do
 				stagedFileName=$(git status -s | grep .mer | awk '{print $4}')
 		fi
 	fi
-	
+	#APA
 	if [[ !( -z $(echo $x | grep .apa) ) && ( -z $APA ) ]]; then
-	   echo "found 3"
+	   #echo "found 3"
 	   APA=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
@@ -58,9 +60,9 @@ for x in $STRING; do
 				stagedFileName=$(git status -s | grep .apa | awk '{print $4}')
 		fi
 	fi
-	
+	#FSP
 	if [[ !( -z $(echo $x | grep .fsp) ) && ( -z $FSP ) ]]; then
-	   echo "found 4"
+	   #echo "found 4"
 	   FSP=$x
 	   lastCommitFileName=$(git log --pretty=format:%H -n1 | 
 							xargs git ls-tree| 
@@ -83,24 +85,29 @@ for x in $STRING; do
 	# xx = major number
 	# yy = revision number
 	# zz = commit number
+	
+	
+	#won't start changing names unless the stagedFile is only one word long
 	if [ $(echo $stagedFileName | wc -w) == 1 ]
 	then
 		#sed 's/.*v//')
-		
-		lastMajorNumber=$(echo $lastCommitFileName | 
-					awk  'BEGIN {FS=".";} {print $1;}')		
-		lastRevisionNumber=$(echo $lastCommitFileName | 
-						awk  'BEGIN {FS=".";} {print $2;}')
-						
-		newMajorNumber=$(echo $stagedFileName | 
-						awk  'BEGIN {FS=".";} {print $1;}')
-		newRevisionNumber=$(echo $stagedFileName | 
-						awk  'BEGIN {FS=".";} {print $2;}')
+		#doesn't run this section of the code if the file has been renamed
+		if [ $ conditionOnStagedFile == "R" ]; then
+			lastMajorNumber=$(echo $lastCommitFileName | 
+						awk  'BEGIN {FS=".";} {print $1;}')		
+			lastRevisionNumber=$(echo $lastCommitFileName | 
+							awk  'BEGIN {FS=".";} {print $2;}')
+							
+			newMajorNumber=$(echo $stagedFileName | 
+							awk  'BEGIN {FS=".";} {print $1;}')
+			newRevisionNumber=$(echo $stagedFileName | 
+							awk  'BEGIN {FS=".";} {print $2;}')
+		fi
 		
 		currentCommitNumber=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
 		newCommitNumber=$(echo $currentCommitNumber | xargs -I {} expr {} + 1)
 	
-		#
+		
 		newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')	
 		if [ $lastMajorNumber != $newMajorNumber ]
@@ -110,7 +117,7 @@ for x in $STRING; do
 			echo $newMajorNumber
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
-						#Why wasn't this working: {$1='$newACDVersion'; $3=0;}
+						
 		elif [ $lastRevisionNumber != $newRevisionNumber ]
 		then
 			#echo "second if"
@@ -122,9 +129,8 @@ for x in $STRING; do
 		git mv $stagedFileName $newFileName
 		echo "Hook executed."
 	else
-		echo "wc not 1"
+		#echo "wc not 1"
 	fi 
-
 
 done 
 

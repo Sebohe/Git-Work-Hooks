@@ -129,9 +129,9 @@ for x in $gitStatusShort; do
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$2=0;} {print;}')
-			revisionChanged=0
 
-		elif [ ( $lastRevisionNumber != $newRevisionNumber ) && ( $revisionChanged -ne 0 )]
+
+		elif [[ ( $lastRevisionNumber != $newRevisionNumber ) && ( $lastMajorNumber != $newMajorNumber ) ]]
 		then
 			newFileName=$(echo $stagedFileName | 
 						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')

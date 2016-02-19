@@ -144,7 +144,12 @@ for x in $gitStatusShort; do
 			exit 1
 		fi
 		
-		git mv $stagedFileName $newFileName
+		
+		if [ $stagedFileName != $newFileName ]
+		then
+			git mv $stagedFileName $newFileName
+		fi
+		
 		if [ $? -ne 0 ]; then
 			exit 1
 		fi

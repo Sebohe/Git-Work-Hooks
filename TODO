@@ -1,4 +1,6 @@
 pre-commit
-1) Create a naming syntax where we can add any file and the pre-commit hook will automatically 
-start managing said file depending if the flag is turned on.
+	1) Create a naming syntax where we can add any file and the pre-commit hook will automatically 
+	start managing said file depending if the flag is turned on.
 
+	BUGS
+	1)won't work when there are two files of the same type.

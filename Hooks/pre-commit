@@ -1,91 +1,78 @@
 #!/bin/sh
-	#xx.yy.zz.ACD
-	# xx = major number
-	# yy = revision number
-	# zz = commit number
+
+#xx.yy.zz.ACD
+# xx = major number
+# yy = revision number
+# zz = commit number
 
 gitStatusP=$(git status --porcelain)
-#cycle through all the words in of STRING
+
+for x in $gitStatusP; do
 for x in $gitStatusP; do
 	if [[ $(echo $x | awk -F. 'NR==1{print NF}') -eq 4  ]]; then
-		
 		stagedFileName="not initiated"
 		
 		conditionOnStagedFile=$(git status --porcelain | grep "$x" | awk '{print $1}')
-		
-		if [ $conditionOnStagedFile == "M" ]
+		if [[ $conditionOnStagedFile == "M" ]]
 		then
 			stagedFileName=$(git status --porcelain | grep "$x" | awk '{print $2}')
 			
-		elif [ $conditionOnStagedFile == "R" ]
+		elif [[ $conditionOnStagedFile == "R" ]]
 		then
+			#add a file type reminder to avoid going in here twice
 			stagedFileName=$(git status --porcelain | grep "$x" | awk '{print $4}')
 			lastCommitFileName=$(git status --porcelain | grep "$x" | awk '{print $2}')
-			
 		else
-		then
-			stagedFileName = "outside of tracking condition:
-
+			stagedFileName="outside of tracking condition:
 							' ' = unmodified
-
 							M = modified
-
 							A = added
-
 							D = deleted
-
 							R = renamed
-
 							C = copied
-
-							U = updated but unmerged						"
+							U = updated but unmerged"
 		fi
-		
-		###############################################################
-		#sed 's/.*v//')
-		#doesn't run this section of the code if the file has been renamed
-		if [ $conditionOnStagedFile == "R" ] 
-		then
-			#echo "CONDITION IS R"
-			lastMajorNumber=$(echo $lastCommitFileName | 
-						awk  'BEGIN {FS=".";} {print $1;}')		
-			lastRevisionNumber=$(echo $lastCommitFileName | 
-							awk  'BEGIN {FS=".";} {print $2;}')
-							
-			newMajorNumber=$(echo $stagedFileName | 
-							awk  'BEGIN {FS=".";} {print $1;}')
-			newRevisionNumber=$(echo $stagedFileName | 
-							awk  'BEGIN {FS=".";} {print $2;}')
-		fi
-		
-		currentCommitNumber=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
-		newCommitNumber=$(echo $currentCommitNumber | xargs -I {} expr {} + 1)
-		newFileName=$(echo $stagedFileName | 
-						awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')	
+		##############################################################
+		if [[ $(echo $stagedFileName | awk 'NR==1{print NF}' ) -eq 1 ]]; then
 
-		if [[ $lastMajorNumber != $newMajorNumber ]]
-		then
-
+			currentCommitNumber=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
+			newCommitNumber=$(echo $currentCommitNumber | xargs -I {} expr {} + 1)
 			newFileName=$(echo $stagedFileName | 
-						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
-			newFileName=$(echo $newFileName | 
-						awk  'BEGIN {FS=OFS=".";} {$2=0;} {print;}')
+							awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')	
+			#Runs this section of the code if the file has been renamed		
+			if [[ $conditionOnStagedFile == "R" ]]
+			then
+				lastMajorNumber=$(echo $lastCommitFileName | 
+							awk  'BEGIN {FS=".";} {print $1;}')		
+				lastRevisionNumber=$(echo $lastCommitFileName | 
+								awk  'BEGIN {FS=".";} {print $2;}')
+								
+				newMajorNumber=$(echo $stagedFileName | 
+								awk  'BEGIN {FS=".";} {print $1;}')
+				newRevisionNumber=$(echo $stagedFileName | 
+								awk  'BEGIN {FS=".";} {print $2;}')
+								
+				if [[ $lastMajorNumber != $newMajorNumber ]]
+				then
+					newFileName=$(echo $stagedFileName | 
+								awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
+					newFileName=$(echo $newFileName | 
+								awk  'BEGIN {FS=OFS=".";} {$2=0;} {print;}')
 
 
-		elif [[ ( $lastRevisionNumber != $newRevisionNumber ) && ( $lastMajorNumber == $newMajorNumber ) ]]
-		then
-			newFileName=$(echo $stagedFileName | 
-						awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
+				elif [[ ( $lastRevisionNumber != $newRevisionNumber ) && ( $lastMajorNumber == $newMajorNumber ) ]]
+				then
+					newFileName=$(echo $stagedFileName | 
+								awk  'BEGIN {FS=OFS=".";} {$3="0";} {print;}')
+				fi
+				
+			fi
+			if [ $stagedFileName != $newFileName ]
+			then
+				git mv $stagedFileName $newFileName
+			fi
+			echo "Hook executed."
 		fi
-
-		if [ $stagedFileName != $newFileName ]
-		then
-			git mv $stagedFileName $newFileName
-		fi
-		
-		if [ $? -ne 0 ]; then
-			exit 1
-		fi
-		echo "Hook executed."		
 	fi
+	
 done

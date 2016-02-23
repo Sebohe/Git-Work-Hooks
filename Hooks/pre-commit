@@ -8,7 +8,6 @@
 gitStatusP=$(git status --porcelain)
 
 for x in $gitStatusP; do
-for x in $gitStatusP; do
 	if [[ $(echo $x | awk -F. 'NR==1{print NF}') -eq 4  ]]; then
 		stagedFileName="not initiated"
 		

@@ -40,3 +40,11 @@ reset head to whats the most updated on the repo: WARNING, removes working dir+e
 
 reset to the previous commit
 	git log --pretty=format:%H | sed -n '2p' | xargs git reset --hard
+	
+If you wish to set tracking information for this branch you can do so with:
+    git branch --set-upstream-to=origin/<branch> SWHoistClearanceOnPalletTransfer
+	
+To push the current branch and set the remote as upstream, use
+    git push --set-upstream origin <branch name>
+
+

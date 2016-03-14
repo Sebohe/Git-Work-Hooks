@@ -51,3 +51,5 @@ To delete remote branch
 	git push origin|<remote repo> --delete <remote branch name>
 
 
+Show Branching
+	git log --all --graph --decorate --oneline --simplify-by-decoration

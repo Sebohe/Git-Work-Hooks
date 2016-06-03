@@ -10,68 +10,71 @@ gitStatusP=$(git status --porcelain)
 for x in $gitStatusP; do
 	if [[ $(echo $x | awk -F. 'NR==1{print NF}') -eq 4  ]]; then
 		stagedFileName="not initiated"
-		
 		conditionOnStagedFile=$(git status --porcelain | grep "$x" | awk '{print $1}')
+
 		if [[ $conditionOnStagedFile == "M" ]]
 		then
 			stagedFileName=$(git status --porcelain | grep "$x" | awk '{print $2}')
-			
+
 		elif [[ $conditionOnStagedFile == "R" ]]
 		then
-			#add a file type reminder to avoid going in here twice
-			stagedFileName=$(git status --porcelain | grep "$x" | awk '{print $4}')
-			lastCommitFileName=$(git status --porcelain | grep "$x" | awk '{print $2}')
+			#this skips the 4th column iteration of $x so as to avoid
+			#running the hook twice on the staged file and previous commit filename
+
+			if [[ $(echo $gitStatusP | awk '{print $4}') != $(echo $x) ]];then
+
+				stagedFileName=$(git status --porcelain | grep "$x" | awk '{print $4}')
+				lastCommitFileName=$(git status --porcelain | grep "$x" | awk '{print $2}')
+			fi
 		else
-			stagedFileName="outside of tracking condition:
-							' ' = unmodified
-							M = modified
-							A = added
-							D = deleted
-							R = renamed
-							C = copied
-							U = updated but unmerged"
+			stagedFileName="outside of tracking condition:"
 		fi
 		##############################################################
+		#This "if" determines if the standard FS is only of one. So only one space.
+		#our file naming does not use spaces in its name
 		if [[ $(echo $stagedFileName | awk 'NR==1{print NF}' ) -eq 1 ]]; then
 
 			currentCommitNumber=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
 			newCommitNumber=$(echo $currentCommitNumber | xargs -I {} expr {} + 1)
-			newFileName=$(echo $stagedFileName | 
-							awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')	
-			#Runs this section of the code if the file has been renamed		
+			newFileName=$stagedFileName
+
+			if [[ $conditionOnStagedFile == "M" ]]; then
+			newFileName=$(echo $stagedFileName |
+							awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')
+			fi
+			#Runs this section of the code if the file has been renamed
 			if [[ $conditionOnStagedFile == "R" ]]
 			then
-				lastMajorNumber=$(echo $lastCommitFileName | 
-							awk  'BEGIN {FS=".";} {print $1;}')		
-				lastRevisionNumber=$(echo $lastCommitFileName | 
+				lastMajorNumber=$(echo $lastCommitFileName |
+							awk  'BEGIN {FS=".";} {print $1;}' | sed 's/^.*v//')
+				lastRevisionNumber=$(echo $lastCommitFileName |
 								awk  'BEGIN {FS=".";} {print $2;}')
-								
-				newMajorNumber=$(echo $stagedFileName | 
-								awk  'BEGIN {FS=".";} {print $1;}')
-				newRevisionNumber=$(echo $stagedFileName | 
+
+				newMajorNumber=$(echo $stagedFileName |
+								awk  'BEGIN {FS=".";} {print $1;}' | sed 's/^.*v//')
+				newRevisionNumber=$(echo $stagedFileName |
 								awk  'BEGIN {FS=".";} {print $2;}')
-								
+
 				if [[ $lastMajorNumber != $newMajorNumber ]]
 				then
-					newFileName=$(echo $stagedFileName | 
+					newFileName=$(echo $stagedFileName |
 								awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
-					newFileName=$(echo $newFileName | 
+					newFileName=$(echo $newFileName |
 								awk  'BEGIN {FS=OFS=".";} {$2=0;} {print;}')
-
 
 				elif [[ ( $lastRevisionNumber != $newRevisionNumber ) && ( $lastMajorNumber == $newMajorNumber ) ]]
 				then
-					newFileName=$(echo $stagedFileName | 
+					newFileName=$(echo $stagedFileName |
 								awk  'BEGIN {FS=OFS=".";} {$3="0";} {print;}')
 				fi
-				
+
 			fi
-			if [ $stagedFileName != $newFileName ]
-			then
+			if [ $stagedFileName != $newFileName ]; then
 				git mv $stagedFileName $newFileName
+				echo "Hook executed for" $newFileName
 			fi
-			echo "Hook executed."
 		fi
 	fi
-	
+
 done
+#

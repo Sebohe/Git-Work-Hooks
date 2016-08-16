@@ -9,59 +9,93 @@
 
 
 gitStatusP=$(git status --porcelain)
-
-#This first for replaces all of the _ in a file version.
+#This first for modifies files that have underscores as their file verion field sepation.
 for x in $gitStatusP; do
-	#echo $x
-	#echo $x | sed 's/^.*v//' | awk -F_ 'NR==1{print NF}'
 
 	if [[ $(echo $x | sed 's/^.*v//' | awk -F_ 'NR==1{print NF}') -eq 3 ]]
 	then
-		#echo $x
-		#fileVersionWithUnderscores=$(echo $x | sed 's/^.*v//' )
+
+		#This variable is just the transformation of underscores to dots.
+		#the first sed removes everything up to the "v". the second sed replaces
+		#underscores with dots in the whole line (g parameter)
 		fileVersionWithDots=$(echo $x | sed 's/^.*v//' | sed 's/_/./g' )
-		#echo $fileVersionWithDots
+
+		#This grabs the first part of the file name
+		#The non versioning part of it all the way up to the v.
+		
 		correctFileName=$( echo $x | cut -d v -f 1)
+		
+		#We then add the above plus "v" plus the file version with dots.
 		correctFileName=$(echo $correctFileName"v"$fileVersionWithDots)
-		#echo "correctFileName"
+
+		#we then move the file "$x" to the no underscore name of it.
+		#git mv automatically stages the file.
 		git mv $x $correctFileName
-		#echo ""
+
 	fi
 done
 
-
+#We need to refresh the current repository status since we modified it above.
 gitStatusP=$(git status --porcelain)
+#This for cycles through each component of git status diving each one by the SPACE field sperator.
 for x in $gitStatusP; do
+
+	#This if determines if the x variable has a Field seperation (dot this time defined by -F.)
+	#and if the amount of fields in x is of value 4. So 3 dots in it's file name. name__DSvxx.yy.zz.<file extension>
 	if [[ $(echo $x | awk -F. 'NR==1{print NF}') -eq 4  ]]; then
+		
 		stagedFileName="not initiated"
+		
+		#git status --porcelain provides the current status of the staged file.
+		# the first column of the field seperation (space) is the condition of the file
+		#which can be M = Modified, R = Renamed, (For now we don't care about other conditions)
+		
 		conditionOnStagedFile=$(git status --porcelain | grep "$x" | awk '{print $1}')
 
+		#The following "if"s determine what is the condition and declares the appropiate variables
+		#needed for the hook to function.
+		#If it's modified then we only need to rev the commit number by 1.
 		if [[ $conditionOnStagedFile == "M" ]]
 		then
 			stagedFileName=$(git status --porcelain | grep "$x" | awk '{print $2}')
-
+		
+		#if it is renamed then we need to know if the Major or the minor number was renamed
+		#to determine how to zero out the filename with hook according to out file versioning scheme.
 		elif [[ $conditionOnStagedFile == "R" ]]
 		then
-			#this skips the 4th column iteration of $x so as to avoid
+		
+			#this if skips the 4th column iteration of $x so as to avoid
 			#running the hook twice on the staged file and previous commit filename
-
+			#The output of git status --porcelain on a renamed file is:
+			#R <old file name> -> <new file name>
+			#
 			if [[ $(echo $gitStatusP | awk '{print $4}') != $(echo $x) ]];then
-
+				
+				#<new file name> is the fourth field. Awk prints out the field by the number of it.
 				stagedFileName=$(git status --porcelain | grep "$x" | awk '{print $4}')
+				#<old file name> is the second field.
 				lastCommitFileName=$(git status --porcelain | grep "$x" | awk '{print $2}')
 			fi
 		else
+			#This else handles if it's anything different to R or M to create a condition in the next
+			#"if" (if [[ $(echo $stagedFileName | awk 'NR==1{print NF}' ) -eq 1 ]]; then).
+			#that causes it to be false.
 			stagedFileName="outside of tracking condition:"
 		fi
 		##############################################################
-		#This "if" determines if the standard FS is only of one. So only one space.
-		#our file naming does not use spaces in its name
+		#This "if" determines if the standard FS (Field seperator, in this case it is "space") is only of one. 
+		#So only field between two spaces. our file naming does not use spaces in its name
+		
 		if [[ $(echo $stagedFileName | awk 'NR==1{print NF}' ) -eq 1 ]]; then
 
+			#The next two lines determines the commit number an adds one to it.
+			#then it assigns to newFileName.
+			#This wil
 			currentCommitNumber=$(echo $stagedFileName | awk 'BEGIN {FS=".";} {print $3; }')
 			newCommitNumber=$(echo $currentCommitNumber | xargs -I {} expr {} + 1)
 			newFileName=$stagedFileName
 
+			#Runs this section fo the code if the file is only modified.
 			if [[ $conditionOnStagedFile == "M" ]]; then
 			newFileName=$(echo $stagedFileName |
 							awk  'BEGIN {FS=OFS=".";} {$3='$newCommitNumber';} {print;}')
@@ -69,23 +103,31 @@ for x in $gitStatusP; do
 			#Runs this section of the code if the file has been renamed
 			if [[ $conditionOnStagedFile == "R" ]]
 			then
+			
+				#We save the last major number.
 				lastMajorNumber=$(echo $lastCommitFileName |
 							awk  'BEGIN {FS=".";} {print $1;}' | sed 's/^.*v//')
+				#We save the last revision number.
 				lastRevisionNumber=$(echo $lastCommitFileName |
 								awk  'BEGIN {FS=".";} {print $2;}')
-
+				#We get the new major number. This value would be manually editted by a human
+				#since, for now.. the software won't know if it is a major or a minor revision.
 				newMajorNumber=$(echo $stagedFileName |
 								awk  'BEGIN {FS=".";} {print $1;}' | sed 's/^.*v//')
 				newRevisionNumber=$(echo $stagedFileName |
 								awk  'BEGIN {FS=".";} {print $2;}')
 
+				#we compare the last major to the new major.
+				#If they are different then we zero out the revision and the commit number.
+				# which are fields 2 and 3 respectively.
 				if [[ $lastMajorNumber != $newMajorNumber ]]
 				then
 					newFileName=$(echo $stagedFileName |
 								awk  'BEGIN {FS=OFS=".";} {$3=0;} {print;}')
 					newFileName=$(echo $newFileName |
 								awk  'BEGIN {FS=OFS=".";} {$2=0;} {print;}')
-
+				#if the major numbers are the same but the revisions are differnt
+				#we only zeroi out the commit number.
 				elif [[ ( $lastRevisionNumber != $newRevisionNumber ) && ( $lastMajorNumber == $newMajorNumber ) ]]
 				then
 					newFileName=$(echo $stagedFileName |
@@ -93,12 +135,12 @@ for x in $gitStatusP; do
 				fi
 
 			fi
+			
+			#git mv command automatically stages a file.
 			if [ $stagedFileName != $newFileName ]; then
 				git mv $stagedFileName $newFileName
 				echo "Hook executed for" $newFileName
 			fi
 		fi
 	fi
-
-done
-#
+done #end of for scope.
